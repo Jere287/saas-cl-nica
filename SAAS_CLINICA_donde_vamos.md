@@ -1,6 +1,6 @@
 # SaaS Clínica — Dónde vamos (nota de avance)
 
-_Última actualización: 2026-07-06_
+_Última actualización: 2026-07-07_
 
 App web de control de calidad para dispositivo médico. Se abre con **Abrir_App.bat**.
 Tras cualquier cambio: **reiniciar el servidor** (cerrar ventana negra + volver a abrir el .bat) y **Ctrl+F5** en el navegador.
@@ -20,9 +20,24 @@ Tras cualquier cambio: **reiniciar el servidor** (cerrar ventana negra + volver 
     - **🔔 Alertas — desechables a repetir** (para el operador): tabla clara de qué pieza no pasó, en qué lote, dónde falló y "↻ Repetir en el siguiente desechable". Clic en una fila abre su detalle.
     - **Análisis** (para el ingeniero): la gráfica ahora tiene un **selector de alcance**: Todo / Por día / Por lote / Un desechable. La línea tiene escala 0–100% y línea de **meta 95%**. "Un desechable" muestra la media de cada canal dentro de su **banda de límite** [mín–máx] (verde dentro, rojo fuera). Debajo sigue el **Pareto** de canales que más fallan.
 
+11. **Cálculos validados contra la hoja manual con datos reales** (2026-07-07):
+    los 14 canales (10 ópticos + 4 eléctricos, n=60 por frecuencia) de una
+    corrida real (SN 13, 2026-03-19) coinciden con `calculos_manuales.xlsx`
+    en media, desviación y rango (diferencia < 0.01), leyendo tanto el JSON
+    como el Excel del equipo. Quedó como **test automatizado** en `tests/`
+    (`py -m unittest discover -s tests -v`).
+12. **Limpieza del repositorio** (2026-07-07): `.gitignore` (la base
+    `qc_datos.db` y `__pycache__` ya no se versionan — respalda la base
+    aparte), `requirements.txt`, `Abrir_App.bat` versionado, app Tkinter
+    vieja movida a `legacy/`, y correcciones: ruta absoluta de la base de
+    datos, veredicto RECHAZADO ahora sale en PDF y Excel, botones "Reporte de
+    esta pieza" y "Eliminar lote" reparados, documentación alineada con el
+    comportamiento real (la comparación histórica está desactivada hasta que
+    el consultor la defina).
+
 ## Pendiente (de mi lado)
 - Crear un **perfil de límites real y completo** (10 ópticos + 4 eléctricos) con los valores del área de calidad.
-- Correr una prueba real subiendo los JSON del equipo.
+- Correr una prueba real completa desde la interfaz (subir los JSON con un perfil real).
 
 ## Idea a futuro (opcional)
 - Barra de progreso al procesar muchos archivos (aunque con JSON es casi instantáneo).

@@ -78,7 +78,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/api/alertas':
             return _json(self, {'alertas': db.alertas_abiertas()})
         if self.path.startswith('/api/batch/'):
-            bid = int(self.path.rsplit('/', 1)[1])
+            try:
+                bid = int(self.path.rsplit('/', 1)[1])
+            except ValueError:
+                return _json(self, {'error': 'id de lote inválido'}, code=400)
             return _json(self, {'batch': db.obtener_batch(bid),
                                 'resultados': db.resultados_de_batch(bid)})
         self.send_error(404)
@@ -111,8 +114,10 @@ class Handler(BaseHTTPRequestHandler):
                 with tempfile.NamedTemporaryFile(suffix=sufijo, delete=False) as tf:
                     tf.write(raw)
                     tmp = tf.name
-                datos = qparser.leer_archivo(tmp)
-                os.unlink(tmp)
+                try:
+                    datos = qparser.leer_archivo(tmp)
+                finally:
+                    os.unlink(tmp)
                 pruebas = {p: [c['canal'] for c in cs] for p, cs in datos['pruebas'].items()}
                 return _json(self, {'ok': True, 'pruebas': pruebas})
             except Exception as e:
@@ -122,6 +127,9 @@ class Handler(BaseHTTPRequestHandler):
             # recibe lista de archivos {nombre, pieza, b64} + perfil + datos del lote
             try:
                 limites = db.cargar_perfil(body['perfil'])
+                if limites is None:
+                    return _json(self, {'ok': False,
+                                        'error': f"El perfil \"{body['perfil']}\" no existe."})
                 # La evaluacion se basa UNICAMENTE en los limites de calidad del
                 # perfil, NO en el mejor historico. (Se deja de pasar mejor_hist.)
                 bid = db.crear_batch(body['lote'], body['operador'], body['perfil'])

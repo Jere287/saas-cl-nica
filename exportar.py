@@ -44,6 +44,8 @@ def _pinta_estado(celda, texto):
         celda.fill = PatternFill('solid', fgColor=ROJO_BG); celda.font = Font(name='Arial', bold=True, color=ROJO_TX, size=10)
     elif texto in ('Sin estándar', 'SIN ESTANDAR'):
         celda.fill = PatternFill('solid', fgColor='FFF2CC'); celda.font = Font(name='Arial', bold=True, color='9C6500', size=10)
+    elif texto in ('RECHAZADO', 'Rechazado'):
+        celda.fill = PatternFill('solid', fgColor='EDEDED'); celda.font = Font(name='Arial', bold=True, color='3A3A3A', size=10)
     else:
         celda.font = NORM
 
@@ -66,16 +68,18 @@ def exportar_lote_excel(ruta_salida, batch, resultados):
     total = len(resultados)
     pasaron = sum(1 for x in resultados if x['veredicto'] == 'PASO')
     incompletos = sum(1 for x in resultados if x['veredicto'] == 'INCOMPLETO')
-    fallaron = total - pasaron - incompletos
+    rechazados = sum(1 for x in resultados if x['veredicto'] == 'RECHAZADO')
+    fallaron = total - pasaron - incompletos - rechazados
     ws['A8'] = 'Total piezas:'; ws['B8'] = total
     ws['A9'] = 'Pasaron:'; ws['B9'] = pasaron
     ws['A10'] = 'Fallaron:'; ws['B10'] = fallaron
     ws['A11'] = 'Incompletos:'; ws['B11'] = incompletos
-    ws['A12'] = 'Aprobación:'; ws['B12'] = (f'{100*pasaron/total:.0f}%' if total else '—')
-    for r in range(8, 13):
+    ws['A12'] = 'Rechazados:'; ws['B12'] = rechazados
+    ws['A13'] = 'Aprobación:'; ws['B13'] = (f'{100*pasaron/total:.0f}%' if total else '—')
+    for r in range(8, 14):
         ws.cell(row=r, column=1).font = BOLD
 
-    hr = 14
+    hr = 15
     headers = ['No. pieza', 'Archivo', 'Óptico', 'Eléctrico', 'Veredicto final', 'Alerta']
     for i, h in enumerate(headers, start=1):
         c = ws.cell(row=hr, column=i, value=h)
@@ -90,12 +94,15 @@ def exportar_lote_excel(ruta_salida, batch, resultados):
             vtxt = 'PASÓ'; alerta = ''
         elif x['veredicto'] == 'INCOMPLETO':
             vtxt = 'Sin estándar'; alerta = 'Completar perfil'
+        elif x['veredicto'] == 'RECHAZADO':
+            vtxt = 'RECHAZADO'; alerta = 'Archivo inválido — reexportar el JSON del equipo'
         else:
             vtxt = 'NO PASÓ'; alerta = 'Repetir prueba'
         _pinta_estado(ws.cell(row=r, column=5, value=vtxt), vtxt)
         ca = ws.cell(row=r, column=6, value=alerta); ca.border = BORDER
         if alerta:
-            color_al = '9C6500' if x['veredicto'] == 'INCOMPLETO' else ROJO_TX
+            color_al = ('9C6500' if x['veredicto'] == 'INCOMPLETO'
+                        else '3A3A3A' if x['veredicto'] == 'RECHAZADO' else ROJO_TX)
             ca.font = Font(name='Arial', bold=True, color=color_al, size=10)
     ws.column_dimensions['A'].width = 12
     ws.column_dimensions['B'].width = 26
@@ -113,6 +120,13 @@ def exportar_lote_excel(ruta_salida, batch, resultados):
         c.font = HEAD; c.fill = FILL_HEAD; c.alignment = CENTER; c.border = BORDER
     r = fila_head + 1
     for x in sorted(resultados, key=lambda z: str(z['pieza'])):
+        # pieza rechazada: no hay canales evaluados; dejar constancia en el respaldo
+        if x['veredicto'] == 'RECHAZADO':
+            wd.cell(row=r, column=1, value=x['pieza']).border = BORDER
+            _pinta_estado(wd.cell(row=r, column=8, value='Rechazado'), 'Rechazado')
+            wd.cell(row=r, column=9, value='Archivo rechazado — formato inválido, no se evaluó.').border = BORDER
+            r += 1
+            continue
         for prueba, filas in x['detalle'].items():
             for f in filas:
                 wd.cell(row=r, column=1, value=x['pieza']).border = BORDER

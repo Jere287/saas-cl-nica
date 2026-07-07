@@ -5,7 +5,10 @@ async function api(ruta, datos){
   return r.json();
 }
 function fmt(n, d=2){ return (n===null||n===undefined||n==='') ? '—' : Number(n).toFixed(d); }
-function esc(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Para pasar un texto como argumento JS dentro de un atributo onclick="...":
+// JSON.stringify lo vuelve literal JS y esc() protege las comillas del HTML.
+function jsAttr(v){ return esc(JSON.stringify(String(v))); }
 
 const CANALES_OPT = ['415','445','480','515','555','590','630','680','CLEAR','>700'];
 const CANALES_ELE = ['2000Hz','3000Hz','4000Hz','5000Hz'];
@@ -133,7 +136,7 @@ function claseEstado(v){ return v==='PASO'?'ok':v==='INCOMPLETO'?'warn':v==='REC
 function mapaHTML(resultados){
   const celdas = resultados.map(x=>{
     const p=_keyPieza(x);
-    return `<div class="celda ${claseEstado(x.veredicto)}" title="Pieza ${esc(p)} — ${x.veredicto}" onclick='verPieza(${JSON.stringify(p)})'>${esc(p)}</div>`;
+    return `<div class="celda ${claseEstado(x.veredicto)}" title="Pieza ${esc(p)} — ${x.veredicto}" onclick="verPieza(${jsAttr(p)})">${esc(p)}</div>`;
   }).join('');
   return `<div class="card"><h3>Mapa del lote (${resultados.length} desechables)</h3>
     <p class="mini">Clic en un desechable para ver su detalle por canal.</p>
@@ -161,7 +164,7 @@ function problemasHTML(resultados){
         else if(f.resultado==='SIN ESTANDAR') motivos.push(`${pr} · ${esc(f.canal)} (sin estándar)`);
       }
     }
-    return `<tr class="row-link" onclick='verPieza(${JSON.stringify(p)})'>
+    return `<tr class="row-link" onclick="verPieza(${jsAttr(p)})">
       <td><b>${esc(p)}</b></td><td>${pillVer(x.veredicto,'PASÓ','NO PASÓ','INCOMPLETO')}</td>
       <td class="mini">${motivos.join('<br>')||'—'}</td></tr>`;
   }).join('');
@@ -174,7 +177,7 @@ function tablaCompletaHTML(resultados){
   const filas = resultados.map(x=>{
     const p=_keyPieza(x);
     const eo=estadoPrueba(x.detalle,'Optico'), ee=estadoPrueba(x.detalle,'Electrico');
-    return `<tr class="row-link" onclick='verPieza(${JSON.stringify(p)})'>
+    return `<tr class="row-link" onclick="verPieza(${jsAttr(p)})">
       <td><b>${esc(p)}</b></td><td>${pillVer(eo,'Pasó','No pasó','Incompleto')}</td>
       <td>${pillVer(ee,'Pasó','No pasó','Incompleto')}</td>
       <td>${pillVer(x.veredicto,'PASÓ','NO PASÓ','INCOMPLETO')}</td></tr>`;
@@ -254,7 +257,7 @@ function verPieza(pieza){
     ? `<button class="btn-danger" onclick="borrarPieza(${x.id},${vistaActual.batch_id})">🗑 Eliminar esta pieza</button>`
     : '';
   html += `<div class="fila" style="margin-top:16px; justify-content:space-between">
-      <button class="btn-out" onclick="repPieza(${vistaActual.batch_id},${JSON.stringify(pieza)})">📄 Reporte de esta pieza</button>
+      <button class="btn-out" onclick="repPieza(${vistaActual.batch_id},${jsAttr(pieza)})">📄 Reporte de esta pieza</button>
       ${btnBorrarPieza}</div>`;
   abrirModal(html);
 }
@@ -417,7 +420,7 @@ function alertasHTML(){
     else if(!a.canales.length) motivo='Incompleto — falta límite para comparar.';
     else motivo = a.canales.slice(0,4).map(c=>`${esc(c.prueba)}·${esc(c.canal)}${c.fase?` (Fase ${c.fase})`:''}`).join(', ')
                 + (a.canales.length>4?` +${a.canales.length-4} más`:'');
-    return `<tr class="row-link" onclick='abrirAlerta(${a.batch_id},${JSON.stringify(String(a.pieza))})'>
+    return `<tr class="row-link" onclick="abrirAlerta(${a.batch_id},${jsAttr(a.pieza)})">
       <td><b>${esc(a.pieza)}</b></td><td>${esc(a.lote)}</td>
       <td>${pillVer(a.veredicto,'PASÓ','NO PASÓ','INCOMPLETO')}</td>
       <td class="mini">${motivo}</td>
@@ -575,7 +578,7 @@ async function verLote(bid){
         <div class="fila">
           <button class="btn-out" onclick="repLote(${bid})">📄 Reporte del lote (PDF)</button>
           <button class="btn-out" onclick="exportarExcel(${bid})">📊 Excel de verificación</button>
-          <button class="btn-danger" onclick="borrarLote(${bid},${JSON.stringify(b.nombre)})">🗑 Eliminar lote</button>
+          <button class="btn-danger" onclick="borrarLote(${bid},${jsAttr(b.nombre)})">🗑 Eliminar lote</button>
         </div>
       </div>
       <div id="tablaTodas" class="oculto" data-n="${total}" style="margin-top:12px">${tablaCompletaHTML(r.resultados)}</div>

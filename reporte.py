@@ -30,6 +30,8 @@ ROJO_T = colors.HexColor('#9C0006')
 AMBAR = colors.HexColor('#FFF2CC')
 AMBAR_T = colors.HexColor('#9C6500')
 GRIS_T = colors.HexColor('#595959')
+GRIS_BG = colors.HexColor('#EDEDED')
+GRIS_OSC = colors.HexColor('#3A3A3A')
 LINEA = colors.HexColor('#CCCCCC')
 
 EMPRESA = '[Nombre de la empresa]'   # editable
@@ -145,6 +147,10 @@ def _banner_veredicto(st, veredicto, motivo):
         label = 'INCOMPLETO'; tx = AMBAR_T; bg = AMBAR; borde = colors.HexColor('#9C6500')
         sub = motivo if motivo else ('Hay canales sin límite definido en el perfil. No se puede '
                                      'aprobar la pieza hasta completar el estándar.')
+    elif veredicto == 'RECHAZADO':
+        label = 'RECHAZADO'; tx = GRIS_OSC; bg = GRIS_BG; borde = GRIS_OSC
+        sub = motivo if motivo else ('El archivo no tiene el formato que entrega el equipo; la pieza '
+                                     'NO se evaluó. Vuelve a exportar el JSON del equipo y súbelo de nuevo.')
     else:
         label = 'NO PASÓ'; tx = ROJO_T; bg = ROJO; borde = colors.HexColor('#A32D2D')
         sub = motivo if motivo else 'Uno o más canales fuera de límites.'
@@ -247,8 +253,11 @@ def _contenido_pieza(st, pieza, batch, operador, fecha, equipo, perfil, veredict
     elems = [_encabezado(st, f'QC-{pieza}', logo_path), Spacer(1, 10),
              _bloque_traza(st, {'pieza': pieza, 'batch': batch, 'fecha': fecha,
                                 'equipo': equipo, 'operador': operador, 'perfil': perfil}),
-             Spacer(1, 8), _resumen_pruebas(st, detalle), Spacer(1, 8),
-             _banner_veredicto(st, veredicto, _motivo_falla(detalle)), Spacer(1, 10)]
+             Spacer(1, 8)]
+    # una pieza RECHAZADA no tiene datos evaluados: sin tarjetas por prueba
+    if veredicto != 'RECHAZADO':
+        elems += [_resumen_pruebas(st, detalle), Spacer(1, 8)]
+    elems += [_banner_veredicto(st, veredicto, _motivo_falla(detalle)), Spacer(1, 10)]
     for prueba, filas in detalle.items():
         nombre = 'Detalle — prueba óptica' if prueba == 'Optico' else 'Detalle — prueba eléctrica'
         elems.append(Paragraph(nombre, st['h2']))
@@ -281,7 +290,8 @@ def generar_pdf_lote(ruta_salida, batch, operador, fecha, resultados, perfil='�
     total = len(resultados)
     pasaron = sum(1 for r in resultados if r['veredicto'] == 'PASO')
     incompletos = sum(1 for r in resultados if r['veredicto'] == 'INCOMPLETO')
-    fallaron = total - pasaron - incompletos
+    rechazados = sum(1 for r in resultados if r['veredicto'] == 'RECHAZADO')
+    fallaron = total - pasaron - incompletos - rechazados
     tasa = f'{(100*pasaron/total):.0f}%' if total else '—'
 
     elems.append(_encabezado(st, f'LOTE-{batch}', logo_path))
@@ -295,13 +305,21 @@ def generar_pdf_lote(ruta_salida, batch, operador, fecha, resultados, perfil='�
     elems.append(resumen)
     elems.append(Spacer(1, 6))
 
+    celdas_kpi = [
+        ('Total', str(total), None),
+        ('Pasaron', str(pasaron), VERDE_T),
+        ('Fallaron', str(fallaron), ROJO_T),
+        ('Incompletos', str(incompletos), AMBAR_T),
+    ]
+    if rechazados:
+        celdas_kpi.append(('Rechazados', str(rechazados), GRIS_OSC))
+    celdas_kpi.append(('Aprobación', tasa, AZUL))
     tarjetas = Table([[
-        Table([[Paragraph('Total', st['label'])], [Paragraph(str(total), ParagraphStyle('n', parent=st['valor'], fontSize=18))]]),
-        Table([[Paragraph('Pasaron', st['label'])], [Paragraph(str(pasaron), ParagraphStyle('n', parent=st['valor'], fontSize=18, textColor=VERDE_T))]]),
-        Table([[Paragraph('Fallaron', st['label'])], [Paragraph(str(fallaron), ParagraphStyle('n', parent=st['valor'], fontSize=18, textColor=ROJO_T))]]),
-        Table([[Paragraph('Incompletos', st['label'])], [Paragraph(str(incompletos), ParagraphStyle('n', parent=st['valor'], fontSize=18, textColor=AMBAR_T))]]),
-        Table([[Paragraph('Aprobación', st['label'])], [Paragraph(tasa, ParagraphStyle('n', parent=st['valor'], fontSize=18, textColor=AZUL))]]),
-    ]], colWidths=[3.04 * cm] * 5)
+        Table([[Paragraph(lbl, st['label'])],
+               [Paragraph(val, ParagraphStyle('n', parent=st['valor'], fontSize=18,
+                                              textColor=col or colors.black))]])
+        for lbl, val, col in celdas_kpi
+    ]], colWidths=[15.2 * cm / len(celdas_kpi)] * len(celdas_kpi))
     tarjetas.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F1EFE8')),
         ('BOX', (0, 0), (-1, -1), 0.5, LINEA), ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.white),
@@ -332,10 +350,14 @@ def generar_pdf_lote(ruta_salida, batch, operador, fecha, resultados, perfil='�
                 return 'Incompleto'
             return 'Pasó'
         eo, ee = estado('Optico'), estado('Electrico')
-        vtxt = {'PASO': 'PASÓ', 'INCOMPLETO': 'INCOMPLETO'}.get(r['veredicto'], 'NO PASÓ')
+        vtxt = {'PASO': 'PASÓ', 'INCOMPLETO': 'INCOMPLETO',
+                'RECHAZADO': 'RECHAZADO'}.get(r['veredicto'], 'NO PASÓ')
         data.append([str(r['pieza']), eo, ee, vtxt])
-        col_final = VERDE if r['veredicto'] == 'PASO' else AMBAR if r['veredicto'] == 'INCOMPLETO' else ROJO
-        col_final_t = _color_estado('Pasó' if r['veredicto'] == 'PASO' else 'Incompleto' if r['veredicto'] == 'INCOMPLETO' else 'No pasó')
+        if r['veredicto'] == 'RECHAZADO':
+            col_final, col_final_t = GRIS_BG, GRIS_OSC
+        else:
+            col_final = VERDE if r['veredicto'] == 'PASO' else AMBAR if r['veredicto'] == 'INCOMPLETO' else ROJO
+            col_final_t = _color_estado('Pasó' if r['veredicto'] == 'PASO' else 'Incompleto' if r['veredicto'] == 'INCOMPLETO' else 'No pasó')
         estilos += [('BACKGROUND', (3, i), (3, i), col_final), ('TEXTCOLOR', (3, i), (3, i), col_final_t)]
         estilos += [('TEXTCOLOR', (1, i), (1, i), _color_estado(eo))]
         estilos += [('TEXTCOLOR', (2, i), (2, i), _color_estado(ee))]

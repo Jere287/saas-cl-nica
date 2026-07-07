@@ -4,10 +4,8 @@ evaluador.py — Evaluacion en DOS FASES segun el consultor.
 Por cada canal (cada uno tiene su propio estandar, definido por el consultor):
 
   FASE 1 — Desviacion estandar (se evalua primero):
-    a) la desviacion calculada debe estar dentro del rango [desv_min, desv_max]
-       que da el consultor.
-    b) ademas, la variabilidad NO puede ser mayor que el mejor (menor) historico
-       registrado para ese canal. Es decir: desv_actual <= mejor_desv_historica.
+    la desviacion calculada debe estar dentro del rango [desv_min, desv_max]
+    que da el consultor.
     Si falla la fase 1 -> el canal NO pasa y se ALERTA (repetir prueba).
 
   FASE 2 — Promedio (solo si paso la fase 1):
@@ -17,9 +15,15 @@ Por cada canal (cada uno tiene su propio estandar, definido por el consultor):
   Si pasa ambas fases -> el canal paso.
   El desechable pasa si TODOS sus canales pasan ambas pruebas.
 
+PENDIENTE (consultor): la regla "variabilidad no mayor a las anteriores"
+(comparar la desviacion contra el mejor/menor historico del canal) esta
+DESACTIVADA hasta tener su definicion exacta. El parametro 'mejor_historico'
+se conserva para reactivarla: hoy el servidor NO lo pasa, asi que la
+evaluacion usa unicamente los limites del perfil.
+
 Formato del estandar (perfil), por canal:
   limites = {
-    'Optico':    { 'Canal 1': {'desv_min':_, 'desv_max':_, 'media_min':_, 'media_max':_}, ... },
+    'Optico':    { '415': {'desv_min':_, 'desv_max':_, 'media_min':_, 'media_max':_}, ... },
     'Electrico': { '2000Hz': {...}, ... },
   }
 

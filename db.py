@@ -10,9 +10,13 @@ Disenado para que migrar a la nube solo cambie esta capa.
 import sqlite3
 import json
 import hashlib
+import os
 from datetime import datetime
 
-DB_PATH = 'qc_datos.db'
+# Ruta ABSOLUTA junto a este archivo: asi la app siempre usa la misma base de
+# datos aunque el servidor se arranque desde otro directorio de trabajo (si
+# fuera relativa, se crearia una base nueva y vacia y "desapareceria" el historial).
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'qc_datos.db')
 
 
 def conectar(path=DB_PATH):
@@ -234,8 +238,12 @@ def conteo_fallas_por_canal(path=DB_PATH):
 
 def mejor_desviacion_historica(path=DB_PATH):
     """Devuelve {prueba: {canal: menor_desviacion_vista}} a traves de TODOS los
-    resultados historicos. Sirve para la Fase 1: la variabilidad de un lote nuevo
-    no puede ser mayor que el mejor (menor) historico de ese canal."""
+    resultados historicos.
+
+    NOTA: actualmente NO se usa. La comparacion contra el historico se
+    desactivo a la espera de la definicion exacta del consultor sobre
+    "variabilidad no mayor a las anteriores" (hoy la evaluacion usa SOLO los
+    limites del perfil). Se conserva para reactivarla cuando haya definicion."""
     mejor = {}
     for r in todos_los_resultados(path):
         for prueba, filas in r['detalle'].items():
