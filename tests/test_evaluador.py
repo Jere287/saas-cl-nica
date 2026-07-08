@@ -49,7 +49,7 @@ class TestEvaluarCanal(unittest.TestCase):
         # esté fuera: el fallo debe reportarse como fase 1.
         r = evaluador.evaluar_canal(_stats(media=50, desv=5.0), LIM)
         self.assertEqual(r['fase_fallo'], 1)
-        self.assertTrue(all('desviacion' in m for m in r['motivos']))
+        self.assertTrue(all('desviación' in m for m in r['motivos']))
 
     def test_limite_parcial_no_evalua_criterio_vacio(self):
         # Campo en None = ese criterio no se evalúa (así funcionan los perfiles).

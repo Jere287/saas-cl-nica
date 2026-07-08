@@ -52,9 +52,9 @@ def evaluar_canal(stats, estandar, mejor_desv_hist=None):
     dmax = estandar.get('desv_max')
     fase1_ok = True
     if dmin is not None and desv < _r(dmin):
-        motivos.append('desviacion por debajo del rango'); fase1_ok = False
+        motivos.append('desviación por debajo del rango'); fase1_ok = False
     if dmax is not None and desv > _r(dmax):
-        motivos.append('desviacion por encima del rango'); fase1_ok = False
+        motivos.append('desviación por encima del rango'); fase1_ok = False
     # comparacion contra el mejor historico (variabilidad no mayor a la anterior)
     if mejor_desv_hist is not None and desv > _r(mejor_desv_hist):
         motivos.append(f'variabilidad mayor al mejor histórico ({_r(mejor_desv_hist)})')

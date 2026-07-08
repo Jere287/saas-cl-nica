@@ -12,6 +12,7 @@ import base64
 import tempfile
 import threading
 import webbrowser
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import parser as qparser
@@ -39,6 +40,21 @@ def _nombre_seguro(texto):
     for c in '/\\:*?"<>|':
         s = s.replace(c, '-')
     return s.strip() or 'sin_nombre'
+
+
+def _escribir_salida(ruta, generar):
+    """Ejecuta generar(ruta). Si Windows niega el permiso (tipicamente porque el
+    archivo esta abierto en Excel o en el visor de PDF, que lo bloquean),
+    reintenta con un nombre alternativo con la hora para no perder la
+    exportacion. Devuelve la ruta donde realmente se guardo."""
+    try:
+        generar(ruta)
+        return ruta
+    except PermissionError:
+        base, ext = os.path.splitext(ruta)
+        alt = f"{base}_{datetime.now().strftime('%H.%M.%S')}{ext}"
+        generar(alt)
+        return alt
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -185,17 +201,23 @@ class Handler(BaseHTTPRequestHandler):
                 if ruta == '/api/reporte_pieza':
                     r = next(x for x in resultados if str(x['no_pieza']) == str(body['pieza']))
                     out = os.path.join(outdir, f"reporte_pieza_{_nombre_seguro(r['no_pieza'])}.pdf")
-                    reporte.generar_pdf(out, r['no_pieza'], batch['nombre'], batch['operador'],
-                                        batch['fecha'][:16].replace('T', ' '), r['veredicto'],
-                                        r['detalle'], perfil=batch['perfil'])
+                    out = _escribir_salida(out, lambda p: reporte.generar_pdf(
+                        p, r['no_pieza'], batch['nombre'], batch['operador'],
+                        batch['fecha'][:16].replace('T', ' '), r['veredicto'],
+                        r['detalle'], perfil=batch['perfil']))
                 else:
                     out = os.path.join(outdir, f"reporte_lote_{_nombre_seguro(batch['nombre'])}.pdf")
                     res2 = [{'pieza': x['no_pieza'], 'archivo': x['archivo'],
                              'veredicto': x['veredicto'], 'detalle': x['detalle']} for x in resultados]
-                    reporte.generar_pdf_lote(out, batch['nombre'], batch['operador'],
-                                             batch['fecha'][:16].replace('T', ' '), res2,
-                                             perfil=batch['perfil'])
+                    out = _escribir_salida(out, lambda p: reporte.generar_pdf_lote(
+                        p, batch['nombre'], batch['operador'],
+                        batch['fecha'][:16].replace('T', ' '), res2,
+                        perfil=batch['perfil']))
                 return _json(self, {'ok': True, 'ruta': out})
+            except PermissionError:
+                return _json(self, {'ok': False, 'error':
+                    'Windows no permitió escribir en la carpeta Reportes_QC. '
+                    'Cierra el PDF si lo tienes abierto y vuelve a intentar.'})
             except Exception as e:
                 return _json(self, {'ok': False, 'error': str(e)})
 
@@ -209,8 +231,12 @@ class Handler(BaseHTTPRequestHandler):
                 out = os.path.join(outdir, f"datos_lote_{_nombre_seguro(batch['nombre'])}.xlsx")
                 res2 = [{'pieza': x['no_pieza'], 'archivo': x['archivo'],
                          'veredicto': x['veredicto'], 'detalle': x['detalle']} for x in resultados]
-                exportar.exportar_lote_excel(out, batch, res2)
+                out = _escribir_salida(out, lambda p: exportar.exportar_lote_excel(p, batch, res2))
                 return _json(self, {'ok': True, 'ruta': out})
+            except PermissionError:
+                return _json(self, {'ok': False, 'error':
+                    'Windows no permitió escribir en la carpeta Reportes_QC. '
+                    'Cierra el Excel si lo tienes abierto y vuelve a intentar.'})
             except Exception as e:
                 import traceback
                 return _json(self, {'ok': False, 'error': str(e), 'tb': traceback.format_exc()})
