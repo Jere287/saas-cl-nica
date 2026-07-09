@@ -301,10 +301,10 @@ async function repLote(bid){ const r=await api('/api/reporte_lote',{batch_id:bid
 async function exportarExcel(bid){
   const r = await api('/api/exportar_excel',{batch_id:bid});
   if(!r.ok){ alert('Error: '+r.error); return; }
-  let msg = 'Excel guardado en:\n'+r.ruta;
-  if(r.drive_ruta) msg += '\n\nCopia guardada en tu Drive:\n'+r.drive_ruta;
-  else if(r.drive_error) msg += '\n\nOJO: el Excel local sí se guardó, pero no se pudo copiar al Drive:\n'+r.drive_error;
-  else msg += '\n\nTip: en "Ajustes" puedes elegir una carpeta de tu Drive para que cada Excel se copie ahí solo.';
+  let msg;
+  if(r.en_drive) msg = 'Excel guardado en tu Drive (se sube solo a la nube):\n'+r.ruta;
+  else if(r.drive_error) msg = 'OJO: '+r.drive_error+'\n\nRuta: '+r.ruta;
+  else msg = 'Excel guardado en:\n'+r.ruta+'\n\nTip: en "Ajustes" puedes elegir una carpeta de tu Drive (OneDrive, Google Drive…) para que los Excel se guarden directo en la nube.';
   alert(msg);
 }
 
@@ -632,8 +632,8 @@ async function verLote(bid){
 }
 
 // ============ VISTA: AJUSTES ============
-// Copia automática de los Excel exportados a la carpeta de un Drive.
-// La app NO usa internet: copia el archivo a la carpeta sincronizada y el
+// Los Excel exportados se guardan directo en la carpeta de un Drive.
+// La app NO usa internet: guarda el archivo en la carpeta sincronizada y el
 // programa del Drive (Google Drive para escritorio / OneDrive / Dropbox)
 // es el que lo sube a la nube.
 async function vistaAjustes(){
@@ -645,10 +645,11 @@ async function vistaAjustes(){
         Google Drive para escritorio (o OneDrive / Dropbox) y vuelve aquí, o escribe la ruta a mano.</p>`;
   document.getElementById('vistas').innerHTML = `
     <div class="card"><h3>${ic('sheet')} Guardar los Excel en tu Drive</h3>
-      <p class="mini" style="margin-bottom:12px">Cada vez que exportes un "Excel de verificación", la app guardará el archivo en
-      <b>Reportes_QC</b> (como siempre) y además una <b>copia en la carpeta que elijas aquí</b>. Si esa carpeta está dentro de tu
-      Drive (Google Drive para escritorio, OneDrive o Dropbox), el propio Drive la sube a la nube automáticamente.
-      La app sigue sin usar internet. Deja el campo vacío y guarda para desactivar la copia.</p>
+      <p class="mini" style="margin-bottom:12px">Cada vez que exportes un "Excel de verificación", la app lo guardará
+      <b>directamente en la carpeta que elijas aquí</b>. Si esa carpeta está dentro de tu Drive (OneDrive, Google Drive
+      para escritorio o Dropbox), el propio Drive lo sube a la nube automáticamente y lo puedes ver desde cualquier
+      dispositivo. La app sigue sin usar internet. Si la carpeta no está disponible al exportar (o dejas este campo
+      vacío), el Excel se guarda en la carpeta local <b>Reportes_QC</b>, como siempre.</p>
       <label class="f">Carpeta destino (dentro de tu Drive)</label>
       <div class="fila">
         <div style="flex:1"><input class="f" id="carpetaDrive" placeholder="Ej. G:\\Mi unidad\\Reportes_QC" value="${esc(r.carpeta||'')}"></div>
@@ -670,7 +671,7 @@ async function guardarCarpetaDrive(){
   const r = await api('/api/drive', {carpeta});
   if(!r.ok){ alert('Error: '+r.error); return; }
   alert(carpeta
-    ? 'Listo. Cada Excel exportado se copiará también en:\n'+r.carpeta
-    : 'Copia al Drive desactivada. Los Excel se guardarán solo en Reportes_QC.');
+    ? 'Listo. Cada Excel exportado se guardará directo en:\n'+r.carpeta+'\n\nTu Drive lo subirá solo a la nube.'
+    : 'Drive desactivado. Los Excel se guardarán en la carpeta local Reportes_QC.');
   vistaAjustes();
 }

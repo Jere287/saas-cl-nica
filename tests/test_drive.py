@@ -1,13 +1,13 @@
 """
-test_drive.py — Copia automática de las exportaciones a la carpeta del Drive.
+test_drive.py — Los Excel exportados se guardan directo en la carpeta del Drive.
 
-La app no usa internet: "guardar en Drive" = copiar el Excel a la carpeta que
-el programa de escritorio (Google Drive / OneDrive / Dropbox) sincroniza.
-Reglas que se verifican:
-  - sin carpeta configurada no se copia nada (y no falla),
-  - la copia crea las subcarpetas que falten,
-  - si la copia anterior está bloqueada (abierta en Excel) se usa otro nombre,
-  - un fallo se informa como texto y NUNCA rompe la exportación local.
+La app no usa internet: "guardar en Drive" = escribir el Excel en la carpeta
+que el programa de escritorio (OneDrive / Google Drive / Dropbox) sincroniza.
+Reglas que se verifican sobre _carpeta_exportacion (la decisión de destino):
+  - sin carpeta configurada -> carpeta local Reportes_QC (como siempre),
+  - con carpeta configurada -> esa carpeta (creándola si falta),
+  - carpeta configurada NO disponible -> cae a Reportes_QC y avisa el motivo
+    (la exportación nunca se pierde por culpa del Drive).
 
 Correr:  py -m unittest discover -s tests -v
 """
@@ -17,68 +17,63 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import db     # noqa: E402
-import drive  # noqa: E402
+import db        # noqa: E402
+import drive     # noqa: E402
+import servidor  # noqa: E402
 
 
-def _crear_origen(carpeta, nombre='datos_lote_8.xlsx', contenido='contenido'):
-    ruta = os.path.join(carpeta, nombre)
-    with open(ruta, 'w') as f:
-        f.write(contenido)
-    return ruta
+class TestCarpetaExportacion(unittest.TestCase):
+    """Prueba la decisión de destino con HOME y configuración controlados."""
 
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        # expanduser('~') lee HOME en Linux/Mac y USERPROFILE en Windows:
+        # se apuntan las dos al directorio temporal para que Reportes_QC caiga ahí
+        self._env_real = {v: os.environ.get(v) for v in ('HOME', 'USERPROFILE')}
+        os.environ['HOME'] = os.environ['USERPROFILE'] = self._tmp.name
+        self._config_real = drive.carpeta_configurada
 
-class TestCopiarADrive(unittest.TestCase):
-    def test_sin_carpeta_configurada_no_copia_ni_falla(self):
-        with tempfile.TemporaryDirectory() as d:
-            origen = _crear_origen(d)
-            copia, error = drive.copiar_a_drive(origen, carpeta='')
-            self.assertIsNone(copia)
-            self.assertIsNone(error)
+    def tearDown(self):
+        drive.carpeta_configurada = self._config_real
+        for var, valor in self._env_real.items():
+            if valor is None:
+                os.environ.pop(var, None)
+            else:
+                os.environ[var] = valor
+        self._tmp.cleanup()
 
-    def test_copia_y_crea_subcarpetas_que_faltan(self):
-        with tempfile.TemporaryDirectory() as d:
-            origen = _crear_origen(d)
-            destino_dir = os.path.join(d, 'MiDrive', 'Reportes_QC')  # aún no existe
-            copia, error = drive.copiar_a_drive(origen, carpeta=destino_dir)
-            self.assertIsNone(error)
-            self.assertEqual(copia, os.path.join(destino_dir, 'datos_lote_8.xlsx'))
-            with open(copia) as f:
-                self.assertEqual(f.read(), 'contenido')
+    def _configurar(self, carpeta):
+        # servidor importa el mismo objeto módulo, así que basta parchear aquí
+        drive.carpeta_configurada = lambda: carpeta
 
-    def test_si_el_destino_esta_bloqueado_copia_con_otro_nombre(self):
-        # Simula el caso real de Windows: la copia anterior está abierta en
-        # Excel y sobreescribirla lanza PermissionError (Errno 13).
-        with tempfile.TemporaryDirectory() as d:
-            origen = _crear_origen(d)
-            destino_dir = os.path.join(d, 'MiDrive')
-            intentos = []
-            copy2_real = drive.shutil.copy2
+    def test_sin_carpeta_configurada_usa_reportes_qc(self):
+        self._configurar('')
+        carpeta, en_drive, aviso = servidor._carpeta_exportacion()
+        self.assertEqual(carpeta, os.path.join(self._tmp.name, 'Reportes_QC'))
+        self.assertFalse(en_drive)
+        self.assertIsNone(aviso)
+        self.assertTrue(os.path.isdir(carpeta))
 
-            def copy2_bloqueado(src, dst):
-                intentos.append(dst)
-                if len(intentos) == 1:
-                    raise PermissionError(13, 'Permission denied', dst)
-                return copy2_real(src, dst)
+    def test_con_carpeta_configurada_guarda_directo_en_el_drive(self):
+        destino = os.path.join(self._tmp.name, 'OneDrive', 'Reportes_QC')  # aún no existe
+        self._configurar(destino)
+        carpeta, en_drive, aviso = servidor._carpeta_exportacion()
+        self.assertEqual(carpeta, destino)
+        self.assertTrue(en_drive)
+        self.assertIsNone(aviso)
+        self.assertTrue(os.path.isdir(destino))   # la crea si falta
 
-            drive.shutil.copy2 = copy2_bloqueado
-            try:
-                copia, error = drive.copiar_a_drive(origen, carpeta=destino_dir)
-            finally:
-                drive.shutil.copy2 = copy2_real
-            self.assertIsNone(error)
-            self.assertEqual(len(intentos), 2)
-            self.assertNotEqual(copia, os.path.join(destino_dir, 'datos_lote_8.xlsx'))
-            self.assertTrue(copia.endswith('.xlsx'))  # conserva la extensión
-            self.assertTrue(os.path.basename(copia).startswith('datos_lote_8_'))
-            self.assertTrue(os.path.exists(copia))
-
-    def test_fallo_devuelve_mensaje_y_no_lanza(self):
-        with tempfile.TemporaryDirectory() as d:
-            origen_inexistente = os.path.join(d, 'no_existe.xlsx')
-            copia, error = drive.copiar_a_drive(origen_inexistente, carpeta=d)
-            self.assertIsNone(copia)
-            self.assertIn('No se pudo copiar', error)
+    def test_carpeta_no_disponible_cae_a_reportes_qc_y_avisa(self):
+        # una ruta imposible (dentro de un archivo) simula la unidad del
+        # Drive desconectada: el Excel debe salir igual, en la carpeta local
+        archivo = os.path.join(self._tmp.name, 'no_soy_carpeta')
+        open(archivo, 'w').close()
+        self._configurar(os.path.join(archivo, 'sub'))
+        carpeta, en_drive, aviso = servidor._carpeta_exportacion()
+        self.assertEqual(carpeta, os.path.join(self._tmp.name, 'Reportes_QC'))
+        self.assertFalse(en_drive)
+        self.assertIn('No se pudo usar la carpeta del Drive', aviso)
+        self.assertTrue(os.path.isdir(carpeta))
 
 
 class TestConfigDrive(unittest.TestCase):

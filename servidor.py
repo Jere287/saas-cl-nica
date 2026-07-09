@@ -43,6 +43,25 @@ def _nombre_seguro(texto):
     return s.strip() or 'sin_nombre'
 
 
+def _carpeta_exportacion():
+    """Decide dónde guardar el Excel exportado: la carpeta del Drive
+    configurada en Ajustes (el programa del Drive la sube solo a la nube) o,
+    si no hay ninguna o no está disponible (p. ej. unidad desconectada), la
+    carpeta local Reportes_QC. Devuelve (carpeta, en_drive, aviso)."""
+    local = os.path.join(os.path.expanduser('~'), 'Reportes_QC')
+    carpeta = drive.carpeta_configurada()
+    if carpeta:
+        try:
+            os.makedirs(carpeta, exist_ok=True)
+            return carpeta, True, None
+        except Exception as e:
+            os.makedirs(local, exist_ok=True)
+            return local, False, (f'No se pudo usar la carpeta del Drive ({carpeta}): {e}. '
+                                  'El Excel se guardó en la carpeta local Reportes_QC.')
+    os.makedirs(local, exist_ok=True)
+    return local, False, None
+
+
 def _escribir_salida(ruta, generar):
     """Ejecuta generar(ruta). Si Windows niega el permiso (tipicamente porque el
     archivo esta abierto en Excel o en el visor de PDF, que lo bloquean),
@@ -230,20 +249,16 @@ class Handler(BaseHTTPRequestHandler):
                 bid = body['batch_id']
                 batch = db.obtener_batch(bid)
                 resultados = db.resultados_de_batch(bid)
-                outdir = os.path.join(os.path.expanduser('~'), 'Reportes_QC')
-                os.makedirs(outdir, exist_ok=True)
+                outdir, en_drive, aviso_drive = _carpeta_exportacion()
                 out = os.path.join(outdir, f"datos_lote_{_nombre_seguro(batch['nombre'])}.xlsx")
                 res2 = [{'pieza': x['no_pieza'], 'archivo': x['archivo'],
                          'veredicto': x['veredicto'], 'detalle': x['detalle']} for x in resultados]
                 out = _escribir_salida(out, lambda p: exportar.exportar_lote_excel(p, batch, res2))
-                # copia a la carpeta del Drive (si esta configurada en Ajustes);
-                # si falla, el Excel local ya quedo guardado y se avisa el motivo
-                copia_drive, error_drive = drive.copiar_a_drive(out)
                 return _json(self, {'ok': True, 'ruta': out,
-                                    'drive_ruta': copia_drive, 'drive_error': error_drive})
+                                    'en_drive': en_drive, 'drive_error': aviso_drive})
             except PermissionError:
                 return _json(self, {'ok': False, 'error':
-                    'Windows no permitió escribir en la carpeta Reportes_QC. '
+                    'Windows no permitió escribir en la carpeta de exportación. '
                     'Cierra el Excel si lo tienes abierto y vuelve a intentar.'})
             except Exception as e:
                 import traceback

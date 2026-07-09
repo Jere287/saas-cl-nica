@@ -35,14 +35,15 @@ Tras cualquier cambio: **reiniciar el servidor** (cerrar ventana negra + volver 
     comportamiento real (la comparación histórica está desactivada hasta que
     el consultor la defina).
 
-13. **Copia automática de los Excel a tu Drive** (2026-07-09): nueva sección
-    **Ajustes** donde eliges una carpeta destino; la app detecta los Drives
-    instalados (Google Drive para escritorio, OneDrive, Dropbox) y propone una
-    subcarpeta `Reportes_QC` dentro. Cada "Excel de verificación" exportado se
-    guarda como siempre en `Reportes_QC` y además se copia a esa carpeta, y el
-    programa del Drive lo sube solo a la nube (la app sigue 100% local, sin
-    internet). Si la copia falla, el Excel local ya quedó guardado y el aviso
-    dice el motivo. Con tests en `tests/test_drive.py`.
+13. **Los Excel exportados se guardan directo en tu Drive** (2026-07-09):
+    nueva sección **Ajustes** donde eliges una carpeta destino; la app detecta
+    los Drives instalados (OneDrive, Google Drive para escritorio, Dropbox) y
+    propone una subcarpeta `Reportes_QC` dentro. Cada "Excel de verificación"
+    exportado se guarda directamente en esa carpeta y el programa del Drive lo
+    sube solo a la nube (la app sigue 100% local, sin internet). Si la carpeta
+    no está disponible al exportar —o no configuraste ninguna— el Excel sale
+    en la carpeta local `Reportes_QC`, como siempre, y el aviso dice el
+    motivo. Con tests en `tests/test_drive.py`.
 
 ## Pendiente (de mi lado)
 - Crear un **perfil de límites real y completo** (10 ópticos + 4 eléctricos) con los valores del área de calidad.
