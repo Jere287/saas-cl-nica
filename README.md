@@ -64,20 +64,21 @@ Veredictos posibles:
    clicables.
 4. **Historial de lotes** — todos los lotes evaluados, con buscador. Clic en
    cualquiera para ver su detalle, corregir (eliminar pieza/lote) o reimprimir.
-5. **Ajustes** — carpeta de tu Drive para las copias automáticas de los Excel
-   exportados (detecta Google Drive para escritorio, OneDrive y Dropbox).
+5. **Ajustes** — carpeta de tu Drive donde se guardan los Excel exportados
+   (detecta Google Drive para escritorio, OneDrive y Dropbox).
 
 ## Reportes y exportación
 
 - **Reporte PDF** individual por pieza o del lote completo (con logo, firmas,
   resultado por prueba y fases).
 - **Exportar a Excel**: genera un .xlsx con el resumen y el respaldo de
-  verificación por canal, en la carpeta `Reportes_QC` de tu usuario.
-- **Copia automática a tu Drive**: en **Ajustes** eliges una carpeta destino
-  (p. ej. dentro de Google Drive para escritorio, OneDrive o Dropbox) y cada
-  Excel exportado se copia ahí; el programa del Drive es quien lo sube a la
-  nube. La app sigue sin usar internet, y si la copia falla el Excel local ya
-  quedó guardado y la app te avisa el motivo.
+  verificación por canal.
+- **Directo a tu Drive**: en **Ajustes** eliges una carpeta destino (p. ej.
+  dentro de OneDrive, Google Drive para escritorio o Dropbox) y cada Excel
+  exportado se guarda directamente ahí; el programa del Drive es quien lo
+  sube a la nube. La app sigue sin usar internet. Sin carpeta configurada —
+  o si no está disponible al exportar — el Excel sale en la carpeta local
+  `Reportes_QC` de tu usuario, como siempre, y la app avisa el motivo.
 
 ## Almacenamiento
 
@@ -107,7 +108,7 @@ evaluador.py     evaluación en dos fases contra el perfil
 db.py            capa de datos SQLite (perfiles, lotes, resultados, usuarios)
 reporte.py       reportes PDF (pieza y lote)
 exportar.py      Excel de verificación por lote
-drive.py         copia de los Excel a la carpeta sincronizada del Drive
+drive.py         carpeta del Drive como destino de los Excel exportados
 piezas.py        número de pieza a partir del nombre del archivo
 web/             interfaz (index.html + app.js)
 tests/           suite de verificación (unittest, stdlib)
