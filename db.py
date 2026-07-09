@@ -4,6 +4,7 @@ db.py — Capa de datos SQLite. Estructura de 3 niveles para el historial:
   batches    : cada lote evaluado (resumen) -> para el historial y tendencias
   resultados : cada pieza de un lote (con su detalle por canal en JSON)
   usuarios   : login simple
+  config     : ajustes clave/valor (p. ej. la carpeta del Drive para copias)
 
 Disenado para que migrar a la nube solo cambie esta capa.
 """
@@ -50,6 +51,9 @@ def inicializar(path=DB_PATH):
         batch_id INTEGER, no_pieza TEXT, archivo TEXT, fecha TEXT,
         veredicto TEXT, detalle TEXT,
         FOREIGN KEY(batch_id) REFERENCES batches(id))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS config (
+        clave TEXT PRIMARY KEY,
+        valor TEXT)''')
     # usuario por defecto: admin / 1234
     cur = con.execute('SELECT COUNT(*) AS n FROM usuarios').fetchone()
     if cur['n'] == 0:
@@ -72,6 +76,21 @@ def cambiar_clave(usuario, nueva, path=DB_PATH):
     con.execute('UPDATE usuarios SET clave_hash=? WHERE usuario=?', (_hash(nueva), usuario))
     con.commit()
     con.close()
+
+
+# ---------- configuracion (clave/valor, p. ej. carpeta del Drive) ----------
+def guardar_config(clave, valor, path=DB_PATH):
+    con = conectar(path)
+    con.execute('INSERT OR REPLACE INTO config (clave, valor) VALUES (?,?)', (clave, valor))
+    con.commit()
+    con.close()
+
+
+def obtener_config(clave, path=DB_PATH):
+    con = conectar(path)
+    row = con.execute('SELECT valor FROM config WHERE clave=?', (clave,)).fetchone()
+    con.close()
+    return row['valor'] if row else None
 
 
 # ---------- perfiles ----------

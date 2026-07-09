@@ -50,7 +50,7 @@ Veredictos posibles:
 > tener su definición exacta. Hoy se evalúa únicamente contra los límites del
 > perfil. El código conserva el mecanismo para reactivarla cuando se defina.
 
-## Las 4 secciones
+## Las 5 secciones
 
 1. **Procesar corrida** — seleccionas los JSON de la corrida, eliges el perfil de
    estándar, lote y operador, evalúas. Ves cada pieza con resultado por prueba y
@@ -64,6 +64,8 @@ Veredictos posibles:
    clicables.
 4. **Historial de lotes** — todos los lotes evaluados, con buscador. Clic en
    cualquiera para ver su detalle, corregir (eliminar pieza/lote) o reimprimir.
+5. **Ajustes** — carpeta de tu Drive para las copias automáticas de los Excel
+   exportados (detecta Google Drive para escritorio, OneDrive y Dropbox).
 
 ## Reportes y exportación
 
@@ -71,6 +73,11 @@ Veredictos posibles:
   resultado por prueba y fases).
 - **Exportar a Excel**: genera un .xlsx con el resumen y el respaldo de
   verificación por canal, en la carpeta `Reportes_QC` de tu usuario.
+- **Copia automática a tu Drive**: en **Ajustes** eliges una carpeta destino
+  (p. ej. dentro de Google Drive para escritorio, OneDrive o Dropbox) y cada
+  Excel exportado se copia ahí; el programa del Drive es quien lo sube a la
+  nube. La app sigue sin usar internet, y si la copia falla el Excel local ya
+  quedó guardado y la app te avisa el motivo.
 
 ## Almacenamiento
 
@@ -100,6 +107,7 @@ evaluador.py     evaluación en dos fases contra el perfil
 db.py            capa de datos SQLite (perfiles, lotes, resultados, usuarios)
 reporte.py       reportes PDF (pieza y lote)
 exportar.py      Excel de verificación por lote
+drive.py         copia de los Excel a la carpeta sincronizada del Drive
 piezas.py        número de pieza a partir del nombre del archivo
 web/             interfaz (index.html + app.js)
 tests/           suite de verificación (unittest, stdlib)

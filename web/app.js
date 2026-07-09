@@ -58,7 +58,7 @@ async function login(){
 document.getElementById('lg-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
 
 // ===== navegación =====
-const TITULOS = {procesar:'Procesar corrida', limites:'Estándar de calidad', dashboard:'Dashboard', historial:'Historial de lotes'};
+const TITULOS = {procesar:'Procesar corrida', limites:'Estándar de calidad', dashboard:'Dashboard', historial:'Historial de lotes', ajustes:'Ajustes'};
 let vistaNombre = 'procesar';   // vista visible ahora (para refrescar tras editar/borrar)
 function ir(v){
   vistaNombre = v;
@@ -68,6 +68,7 @@ function ir(v){
   if(v==='limites') vistaLimites();
   if(v==='dashboard') vistaDashboard();
   if(v==='historial') vistaHistorial();
+  if(v==='ajustes') vistaAjustes();
 }
 
 // ===== archivos =====
@@ -297,7 +298,15 @@ function verPieza(pieza){
 }
 async function repPieza(bid,pieza){ const r=await api('/api/reporte_pieza',{batch_id:bid,pieza}); alert(r.ok?'Reporte guardado en:\n'+r.ruta:'Error: '+r.error); }
 async function repLote(bid){ const r=await api('/api/reporte_lote',{batch_id:bid}); alert(r.ok?'Reporte del lote guardado en:\n'+r.ruta:'Error: '+r.error); }
-async function exportarExcel(bid){ const r=await api('/api/exportar_excel',{batch_id:bid}); alert(r.ok?'Excel guardado en:\n'+r.ruta+'\n\nPuedes subirlo a tu Drive desde ahí.':'Error: '+r.error); }
+async function exportarExcel(bid){
+  const r = await api('/api/exportar_excel',{batch_id:bid});
+  if(!r.ok){ alert('Error: '+r.error); return; }
+  let msg = 'Excel guardado en:\n'+r.ruta;
+  if(r.drive_ruta) msg += '\n\nCopia guardada en tu Drive:\n'+r.drive_ruta;
+  else if(r.drive_error) msg += '\n\nOJO: el Excel local sí se guardó, pero no se pudo copiar al Drive:\n'+r.drive_error;
+  else msg += '\n\nTip: en "Ajustes" puedes elegir una carpeta de tu Drive para que cada Excel se copie ahí solo.';
+  alert(msg);
+}
 
 // --- Corregir: eliminar un lote completo o una pieza suelta ---
 async function borrarLote(bid, nombre){
@@ -620,4 +629,48 @@ async function verLote(bid){
       <div id="tablaTodas" class="oculto" data-n="${total}" style="margin-top:12px">${tablaCompletaHTML(r.resultados)}</div>
     </div>`;
   document.getElementById('detLote').scrollIntoView({behavior:'smooth'});
+}
+
+// ============ VISTA: AJUSTES ============
+// Copia automática de los Excel exportados a la carpeta de un Drive.
+// La app NO usa internet: copia el archivo a la carpeta sincronizada y el
+// programa del Drive (Google Drive para escritorio / OneDrive / Dropbox)
+// es el que lo sube a la nube.
+async function vistaAjustes(){
+  const r = await api('/api/drive');
+  const detectadas = (r.detectadas||[]).map(d=>
+    `<button class="btn-out" onclick="usarCarpetaDrive(${jsAttr(d.ruta)})" title="Usar esta carpeta">
+       ${ic('folder')} ${esc(d.nombre)} · <span class="mini">${esc(d.ruta)}</span></button>`).join('')
+    || `<p class="mini">No se detectó ningún Drive instalado en esta computadora. Instala
+        Google Drive para escritorio (o OneDrive / Dropbox) y vuelve aquí, o escribe la ruta a mano.</p>`;
+  document.getElementById('vistas').innerHTML = `
+    <div class="card"><h3>${ic('sheet')} Guardar los Excel en tu Drive</h3>
+      <p class="mini" style="margin-bottom:12px">Cada vez que exportes un "Excel de verificación", la app guardará el archivo en
+      <b>Reportes_QC</b> (como siempre) y además una <b>copia en la carpeta que elijas aquí</b>. Si esa carpeta está dentro de tu
+      Drive (Google Drive para escritorio, OneDrive o Dropbox), el propio Drive la sube a la nube automáticamente.
+      La app sigue sin usar internet. Deja el campo vacío y guarda para desactivar la copia.</p>
+      <label class="f">Carpeta destino (dentro de tu Drive)</label>
+      <div class="fila">
+        <div style="flex:1"><input class="f" id="carpetaDrive" placeholder="Ej. G:\\Mi unidad\\Reportes_QC" value="${esc(r.carpeta||'')}"></div>
+        <button class="btn-sm" onclick="guardarCarpetaDrive()">${ic('save')} Guardar</button>
+      </div>
+      <div style="margin-top:20px">
+        <label class="f">Drives detectados en esta computadora (clic para usarlo):</label>
+        <div class="fila" style="align-items:center">${detectadas}</div>
+      </div>
+    </div>`;
+}
+function usarCarpetaDrive(ruta){
+  // se propone una subcarpeta propia para no regar archivos en la raíz del Drive
+  const sep = ruta.includes('\\') ? '\\' : '/';
+  document.getElementById('carpetaDrive').value = ruta + sep + 'Reportes_QC';
+}
+async function guardarCarpetaDrive(){
+  const carpeta = document.getElementById('carpetaDrive').value.trim();
+  const r = await api('/api/drive', {carpeta});
+  if(!r.ok){ alert('Error: '+r.error); return; }
+  alert(carpeta
+    ? 'Listo. Cada Excel exportado se copiará también en:\n'+r.carpeta
+    : 'Copia al Drive desactivada. Los Excel se guardarán solo en Reportes_QC.');
+  vistaAjustes();
 }

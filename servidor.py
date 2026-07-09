@@ -20,6 +20,7 @@ import evaluador
 import db
 import reporte
 import exportar
+import drive
 
 PUERTO = 8765
 HTML_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web', 'index.html')
@@ -93,6 +94,9 @@ class Handler(BaseHTTPRequestHandler):
             return _json(self, {'conteo': db.conteo_fallas_por_canal()})
         if self.path == '/api/alertas':
             return _json(self, {'alertas': db.alertas_abiertas()})
+        if self.path == '/api/drive':
+            return _json(self, {'carpeta': drive.carpeta_configurada(),
+                                'detectadas': drive.detectar_carpetas()})
         if self.path.startswith('/api/batch/'):
             try:
                 bid = int(self.path.rsplit('/', 1)[1])
@@ -232,7 +236,11 @@ class Handler(BaseHTTPRequestHandler):
                 res2 = [{'pieza': x['no_pieza'], 'archivo': x['archivo'],
                          'veredicto': x['veredicto'], 'detalle': x['detalle']} for x in resultados]
                 out = _escribir_salida(out, lambda p: exportar.exportar_lote_excel(p, batch, res2))
-                return _json(self, {'ok': True, 'ruta': out})
+                # copia a la carpeta del Drive (si esta configurada en Ajustes);
+                # si falla, el Excel local ya quedo guardado y se avisa el motivo
+                copia_drive, error_drive = drive.copiar_a_drive(out)
+                return _json(self, {'ok': True, 'ruta': out,
+                                    'drive_ruta': copia_drive, 'drive_error': error_drive})
             except PermissionError:
                 return _json(self, {'ok': False, 'error':
                     'Windows no permitió escribir en la carpeta Reportes_QC. '
@@ -248,6 +256,14 @@ class Handler(BaseHTTPRequestHandler):
         if ruta == '/api/borrar_pieza':
             bid = db.borrar_resultado(body['resultado_id'])
             return _json(self, {'ok': True, 'batch_id': bid})
+
+        if ruta == '/api/drive':
+            try:
+                carpeta = drive.configurar_carpeta(body.get('carpeta', ''))
+                return _json(self, {'ok': True, 'carpeta': carpeta})
+            except Exception as e:
+                return _json(self, {'ok': False,
+                                    'error': f'No se pudo usar esa carpeta: {e}'})
 
         if ruta == '/api/cambiar_clave':
             db.cambiar_clave(body.get('usuario', 'admin'), body['nueva'])
