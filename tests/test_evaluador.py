@@ -62,6 +62,15 @@ class TestEvaluarCanal(unittest.TestCase):
         r = evaluador.evaluar_canal(_stats(media=15, desv=1.0), None)
         self.assertEqual(r['resultado'], 'SIN ESTANDAR')
 
+    def test_estandar_con_todos_los_campos_vacios_es_sin_estandar(self):
+        # Un perfil guardado desde la interfaz sin llenar un canal crea el dict
+        # con los 4 campos en None: eso NO es un límite. El canal no debe darse
+        # por pasado (nunca se aprueba sin comparar contra un límite real).
+        vacio = {'desv_min': None, 'desv_max': None,
+                 'media_min': None, 'media_max': None}
+        r = evaluador.evaluar_canal(_stats(media=15, desv=1.0), vacio)
+        self.assertEqual(r['resultado'], 'SIN ESTANDAR')
+
     def test_redondeo_a_2_decimales(self):
         # La comparación se hace con valores redondeados a 2 decimales
         # (DECIMALES=2): 2.004 se redondea a 2.00 y pasa con máx 2.0.

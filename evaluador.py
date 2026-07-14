@@ -39,7 +39,11 @@ def _r(x):
 
 def evaluar_canal(stats, estandar, mejor_desv_hist=None):
     """Devuelve resultado del canal con el detalle de cada fase."""
-    if not estandar:
+    # Sin estandar, o con estandar donde NINGUN campo tiene valor (asi guarda
+    # la interfaz un canal que se dejo vacio): no hay contra que comparar y el
+    # canal NUNCA se da por pasado (dispositivo medico: no se aprueba sin limite).
+    campos = ('desv_min', 'desv_max', 'media_min', 'media_max')
+    if not estandar or all(estandar.get(k) is None for k in campos):
         return {'resultado': 'SIN ESTANDAR', 'motivos': [], 'fase_fallo': None}
 
     motivos = []

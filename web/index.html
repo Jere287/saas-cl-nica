@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hera Diagnostics · Control de Calidad</title>
+<title>Control de Calidad · Dispositivo médico</title>
 <style>
   /* ============ tokens del sistema de diseño ============ */
   :root{
     /* marca */
-    --primario:#6D2E91; --primario-hover:#7D3BA4; --primario-osc:#571F78;
-    --marino-1:#3B1B55; --marino-2:#29123E;
-    --azul-tinte:#F3EDF9; --azul-borde:#DCCBEC;
+    --primario:#155EAB; --primario-hover:#1B6DC4; --primario-osc:#0C447C;
+    --marino-1:#0C2E52; --marino-2:#0A1F38;
+    --azul-tinte:#EEF5FC; --azul-borde:#C9DCF0;
     /* estados (siempre acompañados de texto, nunca color solo) */
     --ok:#12A15A;   --ok-bg:#EAF6EF;   --ok-tx:#086343;
     --no:#D03B3B;   --no-bg:#FDECEC;   --no-tx:#A72525;
@@ -33,26 +33,26 @@
 
   /* ============ LOGIN ============ */
   #login{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-         background:linear-gradient(140deg, var(--marino-2) 0%, var(--marino-1) 45%, #4A2270 100%);}
+         background:linear-gradient(140deg, var(--marino-2) 0%, var(--marino-1) 45%, #12457C 100%);}
   #login::before{content:''; position:absolute; width:640px; height:640px; border-radius:50%;
-         background:radial-gradient(closest-side, rgba(178,132,224,.22), transparent 70%);
+         background:radial-gradient(closest-side, rgba(94,158,224,.22), transparent 70%);
          top:-180px; right:-120px; pointer-events:none;}
   .login-card{position:relative; background:var(--carta); border-radius:18px; padding:40px 36px 32px;
               width:380px; box-shadow:0 24px 64px rgba(4,14,26,.45);}
   .login-card .logo{width:52px; height:52px; border-radius:14px; margin:0 auto 16px;
               background:linear-gradient(135deg, var(--primario) 0%, var(--primario-osc) 100%);
               color:#fff; display:flex; align-items:center; justify-content:center;
-              box-shadow:0 6px 16px rgba(109,46,145,.35);}
+              box-shadow:0 6px 16px rgba(21,94,171,.35);}
   .login-card .logo svg{width:26px; height:26px;}
   .login-card h1{font-size:19px; font-weight:650; text-align:center; color:var(--tinta); letter-spacing:-.01em;}
   .login-card p{text-align:center; color:var(--tinta-3); font-size:12.5px; margin:4px 0 24px;}
   .login-card label{display:block; font-size:12px; font-weight:550; color:var(--tinta-2); margin:14px 0 6px;}
   .login-card input{width:100%; padding:10px 13px; border:1px solid #D7DDE5; border-radius:var(--radio-sm);
               font-size:14px; background:#FCFDFE; transition:border-color .15s, box-shadow .15s;}
-  .login-card input:focus{outline:none; border-color:var(--primario); box-shadow:0 0 0 3px rgba(109,46,145,.14); background:#fff;}
+  .login-card input:focus{outline:none; border-color:var(--primario); box-shadow:0 0 0 3px rgba(21,94,171,.14); background:#fff;}
   .btn{background:var(--primario); color:#fff; border:none; border-radius:var(--radio-sm); padding:11px;
        font-size:14px; font-weight:550; cursor:pointer; width:100%; margin-top:24px;
-       transition:background .15s, transform .05s; box-shadow:0 1px 2px rgba(59,27,85,.25);}
+       transition:background .15s, transform .05s; box-shadow:0 1px 2px rgba(12,46,82,.25);}
   .btn:hover{background:var(--primario-hover);}
   .btn:active{transform:translateY(1px);}
   .login-err{color:var(--no-tx); font-size:12.5px; text-align:center; margin-top:12px; min-height:16px;}
@@ -66,19 +66,19 @@
   .side .marca{display:flex; align-items:center; gap:11px; padding:2px 10px 18px;
         border-bottom:1px solid rgba(255,255,255,.10); margin-bottom:14px;}
   .side .marca .icono{width:36px; height:36px; border-radius:10px; flex-shrink:0;
-        background:linear-gradient(135deg, #9A55C8 0%, var(--primario-osc) 100%);
+        background:linear-gradient(135deg, #2A78D6 0%, var(--primario-osc) 100%);
         color:#fff; display:flex; align-items:center; justify-content:center;}
   .side .marca .icono svg{width:19px; height:19px;}
   .side .marca b{font-size:14px; font-weight:620; color:#fff; letter-spacing:-.01em; display:block; line-height:1.25;}
-  .side .marca span{font-size:11px; color:#C4A9DE; display:block;}
+  .side .marca span{font-size:11px; color:#8FB0D4; display:block;}
   .nav{display:flex; flex-direction:column; gap:3px;}
   .nav a{display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:var(--radio-sm);
-         color:#CDB4E5; text-decoration:none; font-size:13px; font-weight:500; cursor:pointer;
+         color:#A9C3E2; text-decoration:none; font-size:13px; font-weight:500; cursor:pointer;
          transition:background .12s, color .12s;}
   .nav a svg.ic{width:17px; height:17px; opacity:.85;}
   .nav a:hover{background:rgba(255,255,255,.07); color:#fff;}
   .nav a.activo{background:rgba(255,255,255,.12); color:#fff; font-weight:600;}
-  .side .pie{margin-top:auto; padding:14px 12px 4px; font-size:10.5px; color:#8E6BAE;}
+  .side .pie{margin-top:auto; padding:14px 12px 4px; font-size:10.5px; color:#5E7FA3;}
 
   .main{flex:1; padding:28px 34px; overflow-y:auto; min-width:0;}
   .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;}
@@ -153,10 +153,10 @@
   label.f{display:block; font-size:12px; font-weight:550; color:var(--tinta-2); margin:8px 0 5px;}
   input.f, select.f{padding:9px 12px; border:1px solid #D7DDE5; border-radius:var(--radio-sm); font-size:13px;
            width:100%; background:#FCFDFE; color:var(--tinta); transition:border-color .15s, box-shadow .15s;}
-  input.f:focus, select.f:focus{outline:none; border-color:var(--primario); box-shadow:0 0 0 3px rgba(109,46,145,.14); background:#fff;}
+  input.f:focus, select.f:focus{outline:none; border-color:var(--primario); box-shadow:0 0 0 3px rgba(21,94,171,.14); background:#fff;}
   .btn-sm{display:inline-flex; align-items:center; gap:7px; background:var(--primario); color:#fff; border:none;
           border-radius:var(--radio-sm); padding:9px 16px; font-size:13px; font-weight:550; cursor:pointer;
-          box-shadow:0 1px 2px rgba(59,27,85,.25); transition:background .15s, transform .05s;}
+          box-shadow:0 1px 2px rgba(12,46,82,.25); transition:background .15s, transform .05s;}
   .btn-sm:hover{background:var(--primario-hover);} .btn-sm:active{transform:translateY(1px);}
   .btn-out{display:inline-flex; align-items:center; gap:7px; background:var(--carta); color:#344054;
            border:1px solid #D7DDE5; border-radius:var(--radio-sm); padding:9px 15px; font-size:13px; font-weight:500;
@@ -179,7 +179,7 @@
   .mini{font-size:11.5px; color:var(--tinta-3);}
 
   /* barras (Pareto) */
-  .barra{height:10px; border-radius:4px; background:#9A55C8; min-width:3px;}
+  .barra{height:10px; border-radius:4px; background:#2A78D6; min-width:3px;}
 
   /* ============ TARJETAS DE LOTE (dashboard) ============ */
   .mapa-lotes{display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:12px; margin-top:6px;}
@@ -212,8 +212,8 @@
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
     </div>
-    <h1>Hera Diagnostics</h1>
-    <p>Control de calidad · Liberación de desechables</p>
+    <h1>Control de Calidad</h1>
+    <p>Liberación de desechables · Dispositivo médico</p>
     <label>Usuario</label>
     <input id="lg-user" type="text" value="admin" autocomplete="off">
     <label>Contraseña</label>
@@ -231,7 +231,7 @@
       <div class="icono">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
       </div>
-      <div><b>Hera Diagnostics</b><span>Control de calidad</span></div>
+      <div><b>Calidad QC</b><span>Dispositivo médico</span></div>
     </div>
     <div class="nav">
       <a data-v="procesar" class="activo" onclick="ir('procesar')">

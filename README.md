@@ -71,8 +71,13 @@ Veredictos posibles:
 
 - **Reporte PDF** individual por pieza o del lote completo (con logo, firmas,
   resultado por prueba y fases).
-- **Exportar a Excel**: genera un .xlsx con el resumen y el respaldo de
-  verificación por canal.
+- **Exportar a Excel**: genera un reporte formal de liberación de lote con
+  3 hojas: *Reporte de liberación* (membrete corporativo, datos del lote,
+  DICTAMEN de liberación, resumen con índice de aprobación, criterios de
+  evaluación y tabla de aprobaciones Elaboró/Revisó/Aprobó), *Resultados por
+  pieza* (agrupados por veredicto) y *Verificación de cálculos* (respaldo por
+  canal). Sale listo para imprimir (membrete, ajuste a lo ancho y "Página X
+  de Y"); el nombre de la empresa se personaliza en `reporte.py`.
 - **Directo a tu Drive**: en **Ajustes** eliges una carpeta destino (p. ej.
   dentro de OneDrive, Google Drive para escritorio o Dropbox) y cada Excel
   exportado se guarda directamente ahí; el programa del Drive es quien lo

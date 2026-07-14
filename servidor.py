@@ -219,9 +219,8 @@ class Handler(BaseHTTPRequestHandler):
                 bid = body['batch_id']
                 batch = db.obtener_batch(bid)
                 resultados = db.resultados_de_batch(bid)
-                # misma carpeta que el Excel: la del Drive configurada en Ajustes
-                # (el programa del Drive la sube solo a la nube) o la local Reportes_QC
-                outdir, en_drive, aviso_drive = _carpeta_exportacion()
+                outdir = os.path.join(os.path.expanduser('~'), 'Reportes_QC')
+                os.makedirs(outdir, exist_ok=True)
                 if ruta == '/api/reporte_pieza':
                     r = next(x for x in resultados if str(x['no_pieza']) == str(body['pieza']))
                     out = os.path.join(outdir, f"reporte_pieza_{_nombre_seguro(r['no_pieza'])}.pdf")
@@ -237,8 +236,7 @@ class Handler(BaseHTTPRequestHandler):
                         p, batch['nombre'], batch['operador'],
                         batch['fecha'][:16].replace('T', ' '), res2,
                         perfil=batch['perfil']))
-                return _json(self, {'ok': True, 'ruta': out,
-                                    'en_drive': en_drive, 'drive_error': aviso_drive})
+                return _json(self, {'ok': True, 'ruta': out})
             except PermissionError:
                 return _json(self, {'ok': False, 'error':
                     'Windows no permitió escribir en la carpeta Reportes_QC. '
