@@ -1,0 +1,19 @@
+ACTUALIZACIÓN — Reportes PDF (estética)
+=======================================
+
+Qué cambió
+- Nueva estética de los reportes PDF: tipografía serif sobria (Times),
+  monocromática (sin colores), alineada y seria.
+- "Veredicto final" ahora se llama "Dictamen".
+- Se quitaron los guiones largos y los símbolos; se usan palabras claras
+  (Pasa / Falla / Sin estándar, N/D, "110.00 a 130.00").
+- El archivo que cambia es: reporte.py
+
+Cómo reemplazar
+- Copia estos archivos SOBRE tu instalación actual (reemplazar todo).
+- Después: cierra la ventana negra del servidor, vuelve a abrir Abrir_App.bat
+  y en el navegador presiona Ctrl+F5.
+
+IMPORTANTE — tu base de datos
+- Este paquete NO incluye qc_datos.db a propósito, para no borrar tus datos.
+- Conserva tu qc_datos.db actual; no lo reemplaces.
